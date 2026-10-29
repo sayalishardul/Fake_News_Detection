@@ -1,0 +1,80 @@
+.admin-navbar{
+
+    height:70px;
+
+    background:#4F46E5;
+
+    color:white;
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:space-between;
+
+    padding:0 35px;
+
+    box-shadow:0 5px 15px rgba(0,0,0,.12);
+
+    position:sticky;
+
+    isolation:isolate;
+
+    top:0;
+
+    z-index:999;
+
+}
+
+.admin-navbar::after{
+    display:none;
+}
+
+
+.admin-navbar-title{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:12px;
+
+    margin:0;
+
+    min-width:280px;
+
+    position:absolute;
+
+    left:35px;
+
+    top:50%;
+
+    transform:translateY(-50%);
+
+    z-index:1001;
+
+    color:#ffffff !important;
+
+    font-size:20px;
+
+    font-weight:700;
+
+    line-height:1;
+
+    text-transform:none;
+
+}
+
+.admin-navbar-title span{
+    display:inline-block;
+    color:#ffffff !important;
+    opacity:1;
+    visibility:visible;
+    white-space:nowrap;
+}
+
+.admin-navbar-title svg{
+    width:22px;
+    height:22px;
+    color:#ffffff !important;
+}

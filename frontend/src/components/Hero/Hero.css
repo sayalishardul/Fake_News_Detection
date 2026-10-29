@@ -1,0 +1,26 @@
+.hero { min-height: 240px; position: relative; overflow: hidden; box-sizing: border-box; display: grid; place-items: center; padding: 24px 24px; color: white; background: linear-gradient(115deg, #0a6de8 0%, #2563eb 48%, #1d4ed8 100%); }
+.hero::before { content: ""; position: absolute; inset: 0; opacity: .18; background-image: linear-gradient(rgba(255,255,255,.13) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.13) 1px, transparent 1px); background-size: 44px 44px; mask-image: linear-gradient(to right, transparent, black 35%, black 65%, transparent); }
+.hero-orb { position: absolute; border-radius: 999px; filter: blur(2px); pointer-events: none; }
+.hero-orb-one { width: 300px; height: 300px; right: -90px; top: -150px; background: radial-gradient(circle, rgba(96,165,250,.75), rgba(96,165,250,0) 68%); }
+.hero-orb-two { width: 260px; height: 260px; left: -100px; bottom: -170px; background: radial-gradient(circle, rgba(125,211,252,.55), rgba(125,211,252,0) 70%); }
+.hero-content { width: 100%; max-width: 900px; position: relative; z-index: 1; text-align: center; }
+.hero-badge { width: fit-content; margin: 0 auto 10px; padding: 8px 13px; display: flex; align-items: center; gap: 8px; border-radius: 999px; background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.22); color: #dbeafe; font-size: 12px; font-weight: 800; letter-spacing: .4px; backdrop-filter: blur(10px); }
+.hero-badge svg { color: #bfdbfe; }
+.hero h1 { margin: 0; color: white; font-size: clamp(34px, 4vw, 46px); line-height: 1; letter-spacing: -2px; text-wrap: balance; }
+.hero h1 span { display: block; margin-top: 6px; color: #bfdbfe; }
+.hero-description { max-width: 720px; margin: 10px auto 0; color: rgba(255,255,255,.86); font-size: 16px; line-height: 1.55; }
+.hero-highlights { margin-top: 12px; display: flex; justify-content: center; flex-wrap: wrap; gap: 12px; }
+.hero-highlights span { min-height: 38px; padding: 0 14px; box-sizing: border-box; display: inline-flex; align-items: center; gap: 8px; border-radius: 9px; background: rgba(9,47,120,.22); border: 1px solid rgba(255,255,255,.14); color: #eff6ff; font-size: 13px; font-weight: 700; }
+.hero-highlights svg { color: #93c5fd; }
+@media (max-width: 700px) {
+  .hero { min-height: 250px; padding: 28px 18px; }
+  .hero h1 { font-size: 38px; letter-spacing: -1px; }
+  .hero-description { font-size: 16px; }
+  .hero-highlights { gap: 8px; }
+  .hero-highlights span { font-size: 12px; }
+}
+@media (max-width: 420px) {
+  .hero { padding-inline: 14px; }
+  .hero h1 { font-size: 34px; }
+  .hero-highlights span:last-child { display: none; }
+}
