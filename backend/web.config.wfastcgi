@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<configuration>
+  <system.webServer>
+    <!-- Disable WebDAV module to prevent CORS OPTIONS preflight blocking -->
+    <modules>
+      <remove name="WebDAVModule" />
+    </modules>
+    <handlers>
+      <remove name="WebDAV" />
+      <!-- Update path to python.exe and wfastcgi.py for your virtual environment -->
+      <add name="Python FastCGI"
+           path="*"
+           verb="*"
+           modules="FastCgiModule"
+           scriptProcessor="C:\inetpub\wwwroot\fake_news_detection\backend\venv\Scripts\python.exe|C:\inetpub\wwwroot\fake_news_detection\backend\venv\Lib\site-packages\wfastcgi.py"
+           resourceType="Unspecified"
+           requireAccess="Script" />
+    </handlers>
+    <security>
+      <requestFiltering>
+        <verbs allowUnlisted="true">
+          <add verb="OPTIONS" allowed="true" />
+          <add verb="GET" allowed="true" />
+          <add verb="POST" allowed="true" />
+          <add verb="PUT" allowed="true" />
+          <add verb="DELETE" allowed="true" />
+        </verbs>
+      </requestFiltering>
+    </security>
+  </system.webServer>
+  <appSettings>
+    <!-- Update to absolute physical path of your backend folder -->
+    <add key="PYTHONPATH" value="C:\inetpub\wwwroot\fake_news_detection\backend" />
+    <add key="WSGI_HANDLER" value="backend.wsgi.application" />
+    <add key="DJANGO_SETTINGS_MODULE" value="backend.settings" />
+  </appSettings>
+</configuration>

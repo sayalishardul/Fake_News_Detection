@@ -55,19 +55,10 @@ DEBUG = os.environ.get(
 # ALLOWED HOSTS
 # =========================================================
 
-if DEBUG:
-
-    ALLOWED_HOSTS = [
-        "127.0.0.1",
-        "localhost",
-    ]
-
-else:
-
-    ALLOWED_HOSTS = [
-        "your-domain.com",
-        "www.your-domain.com",
-    ]
+ALLOWED_HOSTS_ENV = os.getenv("DJANGO_ALLOWED_HOSTS", "*")
+ALLOWED_HOSTS = [
+    host.strip() for host in ALLOWED_HOSTS_ENV.split(",") if host.strip()
+]
 
 
 # =========================================================
@@ -245,11 +236,45 @@ MEDIA_ROOT = BASE_DIR / "media"
 # CORS
 # =========================================================
 
-CORS_ALLOWED_ORIGINS = [
+CORS_ALLOW_ALL_ORIGINS = os.getenv("CORS_ALLOW_ALL_ORIGINS", "False").lower() == "true"
 
-    "http://localhost:5173",
+CORS_ALLOWED_ORIGINS_ENV = os.getenv("CORS_ALLOWED_ORIGINS", "")
 
-    "http://127.0.0.1:5173",
+if CORS_ALLOWED_ORIGINS_ENV:
+    CORS_ALLOWED_ORIGINS = [
+        origin.strip() for origin in CORS_ALLOWED_ORIGINS_ENV.split(",") if origin.strip()
+    ]
+else:
+    CORS_ALLOWED_ORIGINS = [
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "http://localhost:9191",
+        "http://127.0.0.1:9191",
+        "http://localhost:8181",
+        "http://127.0.0.1:8181",
+    ]
+
+CORS_ALLOW_CREDENTIALS = True
+
+CORS_ALLOW_HEADERS = [
+    "accept",
+    "accept-encoding",
+    "authorization",
+    "content-type",
+    "dnt",
+    "origin",
+    "user-agent",
+    "x-csrftoken",
+    "x-requested-with",
+]
+
+CORS_ALLOW_METHODS = [
+    "DELETE",
+    "GET",
+    "OPTIONS",
+    "PATCH",
+    "POST",
+    "PUT",
 ]
 
 
@@ -257,12 +282,21 @@ CORS_ALLOWED_ORIGINS = [
 # CSRF
 # =========================================================
 
-CSRF_TRUSTED_ORIGINS = [
+CSRF_TRUSTED_ORIGINS_ENV = os.getenv("CSRF_TRUSTED_ORIGINS", "")
 
-    "http://localhost:5173",
-
-    "http://127.0.0.1:5173",
-]
+if CSRF_TRUSTED_ORIGINS_ENV:
+    CSRF_TRUSTED_ORIGINS = [
+        origin.strip() for origin in CSRF_TRUSTED_ORIGINS_ENV.split(",") if origin.strip()
+    ]
+else:
+    CSRF_TRUSTED_ORIGINS = [
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "http://localhost:9191",
+        "http://127.0.0.1:9191",
+        "http://localhost:8181",
+        "http://127.0.0.1:8181",
+    ]
 
 
 # =========================================================
@@ -326,11 +360,11 @@ EMAIL_BACKEND = (
 
 if not DEBUG:
 
-    SECURE_SSL_REDIRECT = True
+    SECURE_SSL_REDIRECT = os.getenv("SECURE_SSL_REDIRECT", "False").lower() == "true"
 
-    SESSION_COOKIE_SECURE = True
+    SESSION_COOKIE_SECURE = os.getenv("SESSION_COOKIE_SECURE", "False").lower() == "true"
 
-    CSRF_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = os.getenv("CSRF_COOKIE_SECURE", "False").lower() == "true"
 
     SECURE_CONTENT_TYPE_NOSNIFF = True
 
