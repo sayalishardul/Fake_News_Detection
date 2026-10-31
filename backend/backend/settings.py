@@ -277,6 +277,11 @@ CORS_ALLOW_METHODS = [
     "PUT",
 ]
 
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r"^http://localhost:\d+$",
+    r"^http://127\.0\.0\.1:\d+$",
+    r"^http://192\.168\.0\.\d+:\d+$",
+]
 
 # =========================================================
 # CSRF
