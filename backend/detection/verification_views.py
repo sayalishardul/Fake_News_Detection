@@ -570,7 +570,7 @@ def verify_news(request):
     }
 
     # Validate recommended checks.
-    checks = assessment.get("checks", [])
+    checks = assessment.get("checks", []) 
 
     if not isinstance(checks, list):
         checks = []
