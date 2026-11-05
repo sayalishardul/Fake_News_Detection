@@ -1,0 +1,36 @@
+# Render blueprint for the Django API (optional — you can also create the
+# Web Service manually with the same values).
+services:
+  - type: web
+    name: fake-news-api
+    runtime: python
+    rootDir: .              # this file lives in backend/
+    buildCommand: "pip install -r requirements.txt && python manage.py migrate --noinput && python manage.py collectstatic --noinput"
+    startCommand: "gunicorn --pythonpath backend backend.wsgi --bind 0.0.0.0:$PORT --workers 2 --timeout 120"
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.7"
+      - key: DJANGO_DEBUG
+        value: "False"
+      - key: DJANGO_ALLOWED_HOSTS
+        value: ".onrender.com"
+      # Set these in the Render dashboard (never commit real values):
+      # - DJANGO_SECRET_KEY
+      # - CORS_ALLOWED_ORIGINS (include your https://*.vercel.app origin)
+      # - CSRF_TRUSTED_ORIGINS (same as above)
+      # - POSTGRES_* (if using Render/Neon/Supabase Postgres)
+      # - OLLAMA_URL / OLLAMA_MODEL (optional; defaults are localhost, will fail in prod)
+      - key: OLLAMA_MODEL
+        value: "qwen2.5:3b"
+      - key: SECURE_SSL_REDIRECT
+        value: "True"
+      - key: SESSION_COOKIE_SECURE
+        value: "True"
+      - key: CSRF_COOKIE_SECURE
+        value: "True"
+
+databases:
+  - name: fake-news-db
+    databaseName: fake_news_detection
+    user: fake_news_user
+    plan: free

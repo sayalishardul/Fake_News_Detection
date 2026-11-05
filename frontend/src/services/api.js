@@ -1,8 +1,26 @@
 import axios from "axios";
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL ||
-  `${window.location.protocol}//${window.location.hostname}:9191/api/`;
+// VITE_API_BASE_URL is baked in at `vite build` time — changing it needs a redeploy.
+// Local dev: http://localhost:9191/api/
+// Vercel production: set it in Vercel (Project -> Settings -> Environment Variables)
+// to your PUBLIC Django base URL, e.g. https://your-backend.onrender.com/api/
+// Must end with `/api/` — code calls `auth/login/` relative to it.
+// If unset, fall back to same-origin `/api/` (relies on a proxy/rewrite), dev only otherwise.
+const ENV_API_URL = import.meta.env.VITE_API_BASE_URL?.trim();
+const API_BASE_URL = ENV_API_URL
+  ? ENV_API_URL.endsWith("/") ? ENV_API_URL : `${ENV_API_URL}/`
+  : import.meta.env.DEV
+    ? "http://localhost:9191/api/"
+    : "/api/";
+
+if (!ENV_API_URL && import.meta.env.PROD) {
+  console.warn(
+    "[api] VITE_API_BASE_URL is not set — requests will go to same-origin /api/ and fail unless you add a proxy. " +
+    "Set it in Vercel env vars to your public Django URL (e.g. https://your-backend.onrender.com/api/) and redeploy."
+  );
+}
+
+export { API_BASE_URL };
 
 const API = axios.create({
     baseURL: API_BASE_URL,
@@ -28,7 +46,11 @@ API.interceptors.response.use((response) => response, async (error) => {
   request._retry = true;
   const refresh = localStorage.getItem("refresh");
   if (!refresh) { localStorage.removeItem("access"); localStorage.removeItem("refresh"); window.location.href = "/login"; return Promise.reject(error); }
-    request.headers.Authorization = `Bearer ${token}`;
+  if (isRefreshing) {
+    return new Promise((resolve, reject) => failedQueue.push({ resolve, reject }))
+      .then((token) => { request.headers.Authorization = `Bearer ${token}`; return API(request); })
+      .catch(Promise.reject);
+  }
   isRefreshing = true;
   try {
     const response = await axios.post(`${API_BASE_URL}auth/token/refresh/`, { refresh });
