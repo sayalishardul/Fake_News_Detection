@@ -4,8 +4,10 @@ Django settings for backend project.
 
 from pathlib import Path
 from datetime import timedelta
+from urllib.parse import urlparse
 import os
 
+import dj_database_url
 from dotenv import load_dotenv
 
 
@@ -21,6 +23,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # =========================================================
 
 load_dotenv(BASE_DIR / ".env")
+
+# Render injects the public URL of the running service into this
+# variable. It is used further down to trust the service's own host.
+RENDER_EXTERNAL_URL = os.getenv("RENDER_EXTERNAL_URL", "").strip()
 
 OLLAMA_URL = os.getenv(
     "OLLAMA_URL",
@@ -60,6 +66,12 @@ ALLOWED_HOSTS = [
     host.strip() for host in ALLOWED_HOSTS_ENV.split(",") if host.strip()
 ]
 
+# Trust the service's own public host (Render sets RENDER_EXTERNAL_URL).
+RENDER_HOST = urlparse(RENDER_EXTERNAL_URL).hostname if RENDER_EXTERNAL_URL else None
+
+if RENDER_HOST and RENDER_HOST not in ALLOWED_HOSTS and "*" not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append(RENDER_HOST)
+
 
 # =========================================================
 # APPLICATIONS
@@ -95,6 +107,8 @@ MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
 
     "django.middleware.security.SecurityMiddleware",
+
+    "whitenoise.middleware.WhiteNoiseMiddleware",
 
     "django.contrib.sessions.middleware.SessionMiddleware",
 
@@ -167,12 +181,40 @@ DATABASES = {
         "PASSWORD": os.getenv("POSTGRES_PASSWORD", "root"),
         "HOST": os.getenv("POSTGRES_HOST", "127.0.0.1"),
         "PORT": os.getenv("POSTGRES_PORT", "5432"),
+        "CONN_MAX_AGE": int(os.getenv("DB_CONN_MAX_AGE", "60")),
+
+        # Extra libpq parameters, e.g. DB_SSLMODE=require for a remote
+        # PostgreSQL server. Empty by default so local connections work.
+        "OPTIONS": {},
     },
     "legacy_sqlite": {
         "ENGINE": "django.db.backends.sqlite3",
         "NAME": BASE_DIR / "db.sqlite3",
     }
 }
+
+DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
+
+if DATABASE_URL:
+    # A single connection string wins over the POSTGRES_* variables.
+    # This is the form Render and most hosted providers give you:
+    #   postgresql://user:password@host:5432/dbname
+    DATABASES["default"] = dj_database_url.parse(
+        DATABASE_URL,
+        conn_max_age=int(os.getenv("DB_CONN_MAX_AGE", "60")),
+    )
+
+if os.getenv("DB_SSLMODE"):
+    # Most hosted connection strings already contain ?sslmode=require.
+    # This only fills the gap for URLs that don't.
+    DATABASES["default"].setdefault("OPTIONS", {}).setdefault(
+        "sslmode", os.getenv("DB_SSLMODE")
+    )
+
+# Some providers hand out URLs without a database name
+# (e.g. postgresql://user:pass@host:5432). Fall back to POSTGRES_DB.
+if DATABASE_URL and not DATABASES["default"].get("NAME"):
+    DATABASES["default"]["NAME"] = os.getenv("POSTGRES_DB", "postgres")
 
 
 # =========================================================
@@ -201,6 +243,15 @@ AUTH_PASSWORD_VALIDATORS = [
             "django.contrib.auth.password_validation.NumericPasswordValidator",
     },
 ]
+
+
+# =========================================================
+# DEFAULT PRIMARY KEY TYPE
+# =========================================================
+
+# The existing migrations create BigAutoField primary keys. Pinning the
+# default keeps `makemigrations` quiet on every Django version.
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 
 # =========================================================
@@ -233,6 +284,54 @@ MEDIA_ROOT = BASE_DIR / "media"
 
 
 # =========================================================
+# STATIC FILES (WhiteNoise)
+# =========================================================
+
+STATIC_ROOT = BASE_DIR / "staticfiles"
+
+STORAGES = {
+
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
+    },
+}
+
+# Render serves the app over HTTPS. Trust the forwarded protocol so
+# Django builds https:// absolute URLs (static files, redirects, etc.).
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
+# WhiteNoise caches content-hashed files forever; unversioned files
+# (index.html, favicon) keep the default short max-age so deploys are picked up.
+
+# Single-service deployment: build the React app into this folder and
+# let WhiteNoise serve it from the same origin as the API. Enable it with
+#   SERVE_FRONTEND=true
+# (see backend/build.sh and render.yaml). With a separate frontend service
+# this stays off and only Django's own static files are served.
+SERVE_FRONTEND = os.getenv("SERVE_FRONTEND", "False").lower() == "true"
+
+FRONTEND_DIST_DIR = Path(
+    os.getenv("FRONTEND_DIST_DIR", BASE_DIR / "frontend_dist")
+)
+
+if SERVE_FRONTEND:
+    # Everything Django/DRF ships in an app's static/ folder is copied here
+    # so one collectstatic covers both the admin and the React app.
+    STATIC_ROOT = BASE_DIR / "staticfiles"
+    WHITENOISE_ROOT = str(FRONTEND_DIST_DIR)
+
+    # Vite names built files "name-<hash>.js". Those can be cached forever;
+    # index.html must not be, so a new deploy is picked up immediately.
+    WHITENOISE_IMMUTABLE_FILE_TEST = (
+        r"(^|/)assets/.+-[\w-]{8,}\.(?:js|css|woff2?|ttf|png|jpe?g|gif|svg|webp|avif)$"
+    )
+
+
+# =========================================================
 # CORS
 # =========================================================
 
@@ -253,6 +352,20 @@ else:
         "http://localhost:8181",
         "http://127.0.0.1:8181",
     ]
+
+# Extra origins for a deployed frontend, e.g.
+# CORS_EXTRA_ORIGINS=https://my-app.onrender.com,https://my-domain.com
+CORS_EXTRA_ORIGINS_ENV = os.getenv("CORS_EXTRA_ORIGINS", "")
+
+CORS_ALLOWED_ORIGINS += [
+    origin.strip()
+    for origin in CORS_EXTRA_ORIGINS_ENV.split(",")
+    if origin.strip() and origin.strip() not in CORS_ALLOWED_ORIGINS
+]
+
+# The backend's own public URL is always a trusted origin.
+if RENDER_EXTERNAL_URL and RENDER_EXTERNAL_URL not in CORS_ALLOWED_ORIGINS:
+    CORS_ALLOWED_ORIGINS.append(RENDER_EXTERNAL_URL)
 
 CORS_ALLOW_CREDENTIALS = True
 
@@ -281,6 +394,8 @@ CORS_ALLOWED_ORIGIN_REGEXES = [
     r"^http://localhost:\d+$",
     r"^http://127\.0\.0\.1:\d+$",
     r"^http://192\.168\.0\.\d+:\d+$",
+    # Render service URLs (frontend/backend previews)
+    r"^https://[\w.-]+\.onrender\.com$",
 ]
 
 # =========================================================
@@ -302,6 +417,20 @@ else:
         "http://localhost:8181",
         "http://127.0.0.1:8181",
     ]
+
+# Extra trusted origins for a deployed frontend, e.g.
+# CSRF_EXTRA_ORIGINS=https://my-app.onrender.com,https://my-domain.com
+CSRF_EXTRA_ORIGINS_ENV = os.getenv("CSRF_EXTRA_ORIGINS", "")
+
+CSRF_TRUSTED_ORIGINS += [
+    origin.strip()
+    for origin in CSRF_EXTRA_ORIGINS_ENV.split(",")
+    if origin.strip() and origin.strip() not in CSRF_TRUSTED_ORIGINS
+]
+
+# The backend's own public URL is always trusted.
+if RENDER_EXTERNAL_URL and RENDER_EXTERNAL_URL not in CSRF_TRUSTED_ORIGINS:
+    CSRF_TRUSTED_ORIGINS.append(RENDER_EXTERNAL_URL)
 
 
 # =========================================================
@@ -363,20 +492,42 @@ EMAIL_BACKEND = (
 )
 
 
+# True when Render (or any reverse proxy) terminates TLS in front of Django.
+BEHIND_HTTPS_PROXY = (
+    os.getenv("HTTPS_PROXY_TERMINATED", "False").lower() == "true"
+    or bool(RENDER_EXTERNAL_URL)
+)
+
+
 if not DEBUG:
 
-    SECURE_SSL_REDIRECT = os.getenv("SECURE_SSL_REDIRECT", "False").lower() == "true"
+    # Off by default: behind Render's proxy the browser already speaks HTTPS,
+    # and an upstream http:// health check would bounce forever.
+    SECURE_SSL_REDIRECT = os.getenv(
+        "SECURE_SSL_REDIRECT",
+        "False",
+    ).lower() == "true"
 
-    SESSION_COOKIE_SECURE = os.getenv("SESSION_COOKIE_SECURE", "False").lower() == "true"
+    # Secure cookies are safe (and recommended) behind an HTTPS proxy: the
+    # browser talks to the proxy over HTTPS.
+    _secure_cookies_default = "True" if BEHIND_HTTPS_PROXY else "False"
 
-    CSRF_COOKIE_SECURE = os.getenv("CSRF_COOKIE_SECURE", "False").lower() == "true"
+    SESSION_COOKIE_SECURE = os.getenv(
+        "SESSION_COOKIE_SECURE", _secure_cookies_default
+    ).lower() == "true"
+
+    CSRF_COOKIE_SECURE = os.getenv(
+        "CSRF_COOKIE_SECURE", _secure_cookies_default
+    ).lower() == "true"
 
     SECURE_CONTENT_TYPE_NOSNIFF = True
 
     X_FRAME_OPTIONS = "DENY"
 
-    SECURE_HSTS_SECONDS = 31536000
+    SECURE_HSTS_SECONDS = int(
+        os.getenv("SECURE_HSTS_SECONDS", "31536000" if BEHIND_HTTPS_PROXY else "0")
+    )
 
-    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = SECURE_HSTS_SECONDS > 0
 
-    SECURE_HSTS_PRELOAD = True
+    SECURE_HSTS_PRELOAD = SECURE_HSTS_SECONDS > 0

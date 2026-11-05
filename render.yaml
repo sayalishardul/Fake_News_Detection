@@ -1,0 +1,132 @@
+###############################################################################
+# Render Blueprint for the Fake News Detection project
+#
+#   Frontend (React + Vite)  ->  backend/ serves it in single-service mode
+#   Backend  (Django + DRF)  ->  Render web service (Docker-free, native Python)
+#   Database (PostgreSQL)    ->  YOUR OWN PostgreSQL server
+#
+# ---------------------------------------------------------------------------
+# Which database?
+# ---------------------------------------------------------------------------
+# DATABASE_URL below is intentionally `sync: false`: Render asks you for it
+# when you create the Blueprint, and never stores the value in this file.
+# Paste your own PostgreSQL connection string, for example:
+#
+#   postgresql://postgres:yourpassword@203.0.113.10:5432/FakeNewsDetection
+#
+# See RENDER_DEPLOYMENT.md for the public-IP / firewall steps this requires.
+#
+# If you would rather let Render host the database, delete every `DATABASE_URL`
+# entry below and uncomment the `databases:` block at the bottom of this file.
+#
+# ---------------------------------------------------------------------------
+# Two deployment shapes
+# ---------------------------------------------------------------------------
+#  A. Single web service (default, cheapest, no CORS):
+#        backend serves the built React app -> one free instance
+#
+#  B. Separate frontend static site:
+#        uncomment the `fake-news-frontend` service at the bottom,
+#        set SERVE_FRONTEND to "false" and point VITE_API_BASE_URL at the API.
+#
+# Docs: https://render.com/docs/blueprint-spec
+###############################################################################
+
+services:
+
+  # ---------------------------------------------------------------------------
+  # Django REST API (+ React build in single-service mode)
+  # ---------------------------------------------------------------------------
+  - type: web
+    name: fake-news-detection
+    runtime: python
+    plan: free
+    # Closest region to India, which keeps round trips to a home database
+    # on the same continent as short as possible.
+    region: singapore
+    rootDir: backend
+    # Installs dependencies, builds the React app (single-service mode),
+    # collects static files and applies migrations.
+    buildCommand: "./build.sh"
+    startCommand: "./start.sh"
+
+    # NOTE: migrations run inside build.sh because Render's `preDeployCommand`
+    # is not available on the free plan. On a paid plan (plan: starter or
+    # higher) you can add the two lines below and set SKIP_MIGRATE=true:
+    #
+    # preDeployCommand: "python manage.py migrate --noinput"
+
+    healthCheckPath: /api/health/
+
+    envVars:
+      # --- Python version (Render's Python runtime) -------------------------
+      - key: PYTHON_VERSION
+        value: "3.14"
+
+      # --- Django core ------------------------------------------------------
+      - key: DJANGO_SECRET_KEY
+        generateValue: true          # Render generates a long random value
+      - key: DJANGO_DEBUG
+        value: "False"
+      - key: DJANGO_ALLOWED_HOSTS
+        value: ".onrender.com,localhost,127.0.0.1"
+      - key: SECURE_SSL_REDIRECT
+        value: "False"               # Render terminates TLS at its proxy
+
+      # --- Your PostgreSQL server ------------------------------------------
+      - key: DATABASE_URL
+        sync: false                  # asked for in the dashboard
+      - key: DB_SSLMODE
+        value: "prefer"              # use "require" if your server enforces TLS
+      - key: DB_CONN_MAX_AGE
+        value: "60"
+      # Name of the database on your PC (mixed case, and it is used as-is).
+      - key: POSTGRES_DB
+        value: "FakeNewsDetection"
+
+      # --- Frontend / CORS --------------------------------------------------
+      # "true" = this service also serves the built React app (recommended).
+      - key: SERVE_FRONTEND
+        value: "true"
+      # Only needed when the frontend runs on a different origin, e.g.
+      # https://fake-news-frontend.onrender.com
+      - key: CORS_EXTRA_ORIGINS
+        sync: false
+      - key: CSRF_EXTRA_ORIGINS
+        sync: false
+
+      # --- Optional integrations (leave blank to disable) -------------------
+      # AI assistant: any OpenAI-compatible chat endpoint.
+      # Local Ollama will NOT work from Render; use a hosted endpoint.
+      - key: OLLAMA_URL
+        sync: false
+      - key: OLLAMA_MODEL
+        sync: false
+      # Web verification uses Tavily.
+      - key: TAVILY_API_KEY
+        sync: false
+      # Support / contact form email (SMTP).
+      - key: EMAIL_HOST
+        sync: false
+      - key: EMAIL_PORT
+        sync: false
+      - key: EMAIL_HOST_USER
+        sync: false
+      - key: EMAIL_HOST_PASSWORD
+        sync: false
+      - key: SUPPORT_EMAIL
+        sync: false
+
+# ---------------------------------------------------------------------------
+# Optional: let Render host PostgreSQL instead of your own server.
+# Uncomment this block, then set DATABASE_URL with:
+#     fromDatabase:
+#       name: fake-news-db
+#       property: connectionString
+# ---------------------------------------------------------------------------
+# databases:
+#   - name: fake-news-db
+#     databaseName: FakeNewsDetection
+#     user: fake_news
+#     plan: free
+#     region: oregon
