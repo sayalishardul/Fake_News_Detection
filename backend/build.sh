@@ -77,7 +77,7 @@ python manage.py collectstatic --noinput --clear
 #
 # Set SKIP_MIGRATE=true to build without touching the database (the database
 # may be unreachable from a build sandbox you don't control).
-if [ "${SKIP_MIGRATE:-false}" = "true" ]; then
+if [ "${SKIP_MIGRATE:-true}" = "true" ]; then
     echo "==> Skipping migrations (SKIP_MIGRATE=true)"
 else
     echo "==> Applying database migrations"

@@ -3,7 +3,7 @@
 #
 #   Frontend (React + Vite)  ->  backend/ serves it in single-service mode
 #   Backend  (Django + DRF)  ->  Render web service (Docker-free, native Python)
-#   Database (PostgreSQL)    ->  YOUR OWN PostgreSQL server
+#   Database (MongoDB Atlas) -> MONGODB_URI
 #
 # ---------------------------------------------------------------------------
 # Which database?
@@ -73,16 +73,9 @@ services:
       - key: SECURE_SSL_REDIRECT
         value: "False"               # Render terminates TLS at its proxy
 
-      # --- Your PostgreSQL server ------------------------------------------
-      - key: DATABASE_URL
-        sync: false                  # asked for in the dashboard
-      - key: DB_SSLMODE
-        value: "prefer"              # use "require" if your server enforces TLS
-      - key: DB_CONN_MAX_AGE
-        value: "60"
-      # Name of the database on your PC (mixed case, and it is used as-is).
-      - key: POSTGRES_DB
-        value: "FakeNewsDetection"
+      # --- MongoDB Atlas ---------------------------------------------------
+      - key: MONGODB_URI
+        sync: false
 
       # --- Frontend / CORS --------------------------------------------------
       # "true" = this service also serves the built React app (recommended).
