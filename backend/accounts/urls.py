@@ -1,5 +1,7 @@
 from django.urls import path
 
+from rest_framework_simplejwt.views import TokenRefreshView
+
 from . import views
 
 
@@ -13,6 +15,14 @@ urlpatterns = [
         "register/",
         views.register,
         name="register",
+    ),
+
+    # Exchanges a refresh token for a new access token (and a rotated
+    # refresh token). The frontend calls this on any 401 response.
+    path(
+        "token/refresh/",
+        TokenRefreshView.as_view(),
+        name="token-refresh",
     ),
 
     path(
