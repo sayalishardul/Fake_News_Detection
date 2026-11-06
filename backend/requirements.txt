@@ -7,6 +7,10 @@ django-mongodb-backend==6.0.4
 django-cors-headers==4.9.0
 djangorestframework==3.17.1
 djangorestframework_simplejwt==5.5.1
+<<<<<<< HEAD
+=======
+dj-database-url==3.1.2
+>>>>>>> a8d2024048306acb30dc9a43c210eaef76789027
 gunicorn==26.2.0; sys_platform != "win32"
 h11==0.16.0
 httpcore2==2.16.0

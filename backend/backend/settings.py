@@ -7,6 +7,7 @@ from datetime import timedelta
 from urllib.parse import urlparse
 import os
 
+import dj_database_url
 from dotenv import load_dotenv
 
 
@@ -188,6 +189,7 @@ if not MONGODB_URI:
 
 DATABASES = {
     "default": {
+<<<<<<< HEAD
         "ENGINE": "django_mongodb_backend",
         "HOST": MONGODB_URI,
         "NAME": "fake_news_detection",
@@ -203,6 +205,50 @@ MIGRATION_MODULES = {
 
 # Default primary key field
 DEFAULT_AUTO_FIELD = "django_mongodb_backend.fields.ObjectIdAutoField"
+=======
+
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": os.getenv("POSTGRES_DB", "FakeNewsDetection"),
+        "USER": os.getenv("POSTGRES_USER", "postgres"),
+        "PASSWORD": os.getenv("POSTGRES_PASSWORD", "root"),
+        "HOST": os.getenv("POSTGRES_HOST", "127.0.0.1"),
+        "PORT": os.getenv("POSTGRES_PORT", "5432"),
+        "CONN_MAX_AGE": int(os.getenv("DB_CONN_MAX_AGE", "60")),
+
+        # Extra libpq parameters, e.g. DB_SSLMODE=require for a remote
+        # PostgreSQL server. Empty by default so local connections work.
+        "OPTIONS": {},
+    },
+    "legacy_sqlite": {
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": BASE_DIR / "db.sqlite3",
+    }
+}
+
+DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
+
+if DATABASE_URL:
+    # A single connection string wins over the POSTGRES_* variables.
+    # This is the form Render and most hosted providers give you:
+    #   postgresql://user:password@host:5432/dbname
+    DATABASES["default"] = dj_database_url.parse(
+        DATABASE_URL,
+        conn_max_age=int(os.getenv("DB_CONN_MAX_AGE", "60")),
+    )
+
+if os.getenv("DB_SSLMODE"):
+    # Most hosted connection strings already contain ?sslmode=require.
+    # This only fills the gap for URLs that don't.
+    DATABASES["default"].setdefault("OPTIONS", {}).setdefault(
+        "sslmode", os.getenv("DB_SSLMODE")
+    )
+
+# Some providers hand out URLs without a database name
+# (e.g. postgresql://user:pass@host:5432). Fall back to POSTGRES_DB.
+if DATABASE_URL and not DATABASES["default"].get("NAME"):
+    DATABASES["default"]["NAME"] = os.getenv("POSTGRES_DB", "postgres")
+
+>>>>>>> a8d2024048306acb30dc9a43c210eaef76789027
 
 # =========================================================
 # PASSWORD VALIDATION
@@ -238,6 +284,10 @@ AUTH_PASSWORD_VALIDATORS = [
 
 # The existing migrations create BigAutoField primary keys. Pinning the
 # default keeps `makemigrations` quiet on every Django version.
+<<<<<<< HEAD
+=======
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+>>>>>>> a8d2024048306acb30dc9a43c210eaef76789027
 
 
 # =========================================================
