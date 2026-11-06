@@ -18,7 +18,7 @@ services:
       # - DJANGO_SECRET_KEY
       # - CORS_ALLOWED_ORIGINS (include your https://*.vercel.app origin)
       # - CSRF_TRUSTED_ORIGINS (same as above)
-      # - POSTGRES_* (if using Render/Neon/Supabase Postgres)
+      # - MONGODB_URI (MongoDB Atlas connection string)
       # - OLLAMA_URL / OLLAMA_MODEL (optional; defaults are localhost, will fail in prod)
       - key: OLLAMA_MODEL
         value: "qwen2.5:3b"
@@ -28,9 +28,3 @@ services:
         value: "True"
       - key: CSRF_COOKIE_SECURE
         value: "True"
-
-databases:
-  - name: fake-news-db
-    databaseName: fake_news_detection
-    user: fake_news_user
-    plan: free

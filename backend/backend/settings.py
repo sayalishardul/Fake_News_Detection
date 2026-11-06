@@ -194,8 +194,6 @@ DATABASES = {
     }
 }
 
-DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
-
 # MongoDB migration configuration
 MIGRATION_MODULES = {
     "admin": None,
