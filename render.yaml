@@ -61,7 +61,7 @@ services:
     envVars:
       # --- Python version (Render's Python runtime) -------------------------
       - key: PYTHON_VERSION
-        value: "3.14"
+        value: "3.12.7"
 
       # --- Django core ------------------------------------------------------
       - key: DJANGO_SECRET_KEY
@@ -76,6 +76,8 @@ services:
       # --- MongoDB Atlas ---------------------------------------------------
       - key: MONGODB_URI
         sync: false
+      - key: SKIP_MIGRATE
+        value: "true"
 
       # --- Frontend / CORS --------------------------------------------------
       # "true" = this service also serves the built React app (recommended).
