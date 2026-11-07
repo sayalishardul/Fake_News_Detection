@@ -5,7 +5,7 @@ services:
     name: fake-news-api
     runtime: python
     rootDir: .              # this file lives in backend/
-    buildCommand: "pip install -r requirements.txt && python manage.py collectstatic --noinput"
+    buildCommand: "./build.sh"
     startCommand: "gunicorn --pythonpath backend backend.wsgi --bind 0.0.0.0:$PORT --workers 2 --timeout 120"
     envVars:
       - key: PYTHON_VERSION
@@ -19,6 +19,8 @@ services:
       # - CORS_ALLOWED_ORIGINS (include your https://*.vercel.app origin)
       # - CSRF_TRUSTED_ORIGINS (same as above)
       # - MONGODB_URI (MongoDB Atlas connection string)
+      - key: SKIP_MIGRATE
+        value: "true"
       # - OLLAMA_URL / OLLAMA_MODEL (optional; defaults are localhost, will fail in prod)
       - key: OLLAMA_MODEL
         value: "qwen2.5:3b"
